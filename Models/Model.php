@@ -2,6 +2,8 @@
 include_once 'Database.php';
 
 class Model extends Database{
+ 
+
     protected $table;
     protected $table_fields;
 
@@ -12,14 +14,16 @@ class Model extends Database{
       private function getTableFields(){
         $fields= array();
         foreach ($this->table_fields as $item){
-          if($this->$item != NULL)
           $fields [$item] = $this -> $item;
           // array_push($fields, $item);
         }
         return $fields;
       }
 
-      public function getAll(){
+      
+    public function getAll(){
+      $requestMethod = $_SERVER["REQUEST_METHOD"];
+        if ($requestMethod == 'GET'){
         $query = "SELECT * FROM " .$this->table;
 
         $stmt = $this->conn->prepare($query);
@@ -29,10 +33,24 @@ class Model extends Database{
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode($result);
+        }else {
+          echo json_encode(array(
+            "message"=> "invalid method"
+          ));
+          http_response_code(422);
+        }
       }
 
       public function find($id){
-
+        $requestMethod = $_SERVER["REQUEST_METHOD"];
+        if ($requestMethod == 'GET'){
+          if(!is_numeric($id)){
+          http_response_code(422);
+          echo json_encode(array(
+            "message"=> "invalid id"
+          ));
+          return;
+          }
         $query = 'SELECT * FROM '. $this->table . '
          WHERE id = ? 
          LIMIT 0,1';
@@ -50,45 +68,55 @@ class Model extends Database{
         }
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
          echo json_encode($result);
+        }else {
+          echo json_encode(array(
+            "message"=> "invalid method"
+          ));
+          http_response_code(422);
+        }
     }
 
     public function create($request){
       //write query
+      $requestMethod = $_SERVER["REQUEST_METHOD"];
+      if ($requestMethod == 'POST'){
       $fields =  $this->getTableFields();
       $keys = array_keys($fields);
-      $query = 'INSERT INTO ' . $this->table .'(' .join(',', $keys ) . ') values ('.join(',', $fields ) .')';
-      echo $query;
+      $data = array_values((get_object_vars($request)));
+      $query = "INSERT INTO "  . $this->table; 
+      $query.="(" .join(',', $keys ) . ")  ";
+      $query.="VALUES ('".join("','", $data ) ."')";
 
-      // prepare statement
+      // execute  statement
       $stmt = $this->conn->query($query);
 
-      //clean data (htmlspecialchars)
-      // $request->name = htmlspecialchars(strip_tags($request->name));
-    // echo $request;
-      //bindparams
-      // $stmt->bindParam('name', $request->name);
-      // $stmt->bindParam('email', $request->email);
-      // $stmt->bindParam('password', $request->password);
+      http_response_code(201);  
+      echo json_encode(
+        array('Message'=>'User created')
+      );
+      return $stmt;
+  }else {
+      echo json_encode(array(
+        "message"=> "invalid method"
+      ));
+      http_response_code(422);
+    }
 
-      //execute
-      // if($stmt->execute()) {
-          return $stmt;
-        //  }
-  // printf("Error: %s.\n", $stmt->error);
-
-  // return false;
 }
 
 public function update($id, $request){
-  $query = 'UPDATE ' . $this->table . ' SET name = :name
-  WHERE id = :id ';
+  $requestMethod = $_SERVER["REQUEST_METHOD"];
+  if ($requestMethod == 'PUT'){
+      $fields = (get_object_vars($request));
+      // $values = array_values((get_object_vars($request)));
+  $query = "UPDATE $this->table SET ";
+  foreach ($fields as $field => $value ){
+    $update_values[] = "$field = '$value'";
+  }
+  $query.= join(',',$update_values);
+  $query.= "WHERE id = $id ";
 
   $stmt = $this->conn->prepare($query);
-
-  $request->name = htmlspecialchars(strip_tags($request->name));
-
-  $stmt->bindParam(':name', $request->name);
-  $stmt->bindParam(':id', $id);
 
   if($stmt->execute()) {
       return true;
@@ -97,15 +125,23 @@ public function update($id, $request){
   printf("Error: %s.\n", $stmt->error);
 
   return false;
+}else {
+  echo json_encode(array(
+    "message"=> "invalid method"
+  ));
+  http_response_code(422);
 }
+
+}
+
+
 public function delete($id){
-  $query = 'DELETE FROM '. $this->table . '
-  WHERE id = ?';
+  $requestMethod = $_SERVER["REQUEST_METHOD"];
+  if ($requestMethod == 'DELETE'){
+  $query = "DELETE FROM $this->table WHERE id = $id";
 
   $stmt = $this->conn->prepare($query);
 
-  $stmt->bindParam(1, $id);
-  
   if($stmt->execute()) {
       return true;
 
@@ -113,6 +149,11 @@ public function delete($id){
   printf("Error: %s.\n", $stmt->error);
 
   return false;
+ } else {
+    echo json_encode(array(
+      "message"=> "invalid method"
+    ));
+    http_response_code(422);
+  }
 }
-
 }

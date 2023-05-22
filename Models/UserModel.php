@@ -11,7 +11,6 @@ class UserModel extends Model {
     protected $email;
     protected $password;
 
-
 	protected  $table = 'users';
 	protected  $table_fields = array('name', 'email', 'password');
 
@@ -20,16 +19,58 @@ class UserModel extends Model {
         parent::__construct();
     }
 
-    public function login($request){
-	 		$query =  'SELECT * FROM ' .$this->table. ' WHERE email = '. "$request->email" . ' AND password = ' . $request->password.' LIMIT 1';
-            echo $query;
+    function checkEmail($email){
+        $query =  "SELECT * FROM $this->table WHERE email = '$email' LIMIT 1";
              $stmt = $this->conn->prepare($query);
 
              $stmt->execute();
      
              $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-     
-             echo json_encode($result);
+             return $result;
+    }
+
+    public function register($request){
+	 		$result = $this->checkEmail($request->email);
+            $request->password = md5($request->password);
+             if ($result) {
+                echo json_encode(array(
+                    "message"=> "User with this email already exits"
+                ));
+                return;
+             }
+             $result = $this->create($request);
+             return $result;
+
+    }
+    public function login($request){
+        $requestMethod = $_SERVER["REQUEST_METHOD"];
+        if ($requestMethod == 'POST'){
+        $result = $this->checkEmail($request->email);
+
+             if (!$result) {
+                echo json_encode(array(
+                    "message"=> "No User with this email"
+                ));
+                return;
+             }
+             $request->password = md5($request->password);
+             if($request->password == $result[0]['password']){
+                echo json_encode(array(
+                    "message"=> "Logged in succefully",
+                    "data"=> $result[0]
+                ));
+                return;
+            }
+            http_response_code(401);
+            echo json_encode( array(
+                "message" => "Invalid credentials"
+            ));
+        }else {
+            echo json_encode(array(
+              "message"=> "invalid method"
+            ));
+          http_response_code(422);
+          }
     } 
 
 }
