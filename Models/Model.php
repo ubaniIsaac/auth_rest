@@ -1,6 +1,7 @@
 <?php
 include_once 'Database.php';
 
+
 class Model extends Database{
  
 
@@ -92,7 +93,7 @@ class Model extends Database{
 
       http_response_code(201);  
       echo json_encode(
-        array('Message'=>'User created')
+        array('Message'=>"$this->table created")
       );
       return $stmt;
   }else {
@@ -119,6 +120,9 @@ public function update($id, $request){
   $stmt = $this->conn->prepare($query);
 
   if($stmt->execute()) {
+    echo json_encode(array(
+      "message"=> "User Updated"
+    ));
       return true;
 
   }
@@ -131,7 +135,6 @@ public function update($id, $request){
   ));
   http_response_code(422);
 }
-
 }
 
 
