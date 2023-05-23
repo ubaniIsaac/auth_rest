@@ -1,8 +1,8 @@
 <?php
 
 require_once '../auth_rest/Models/UserModel.php';
-require_once '../auth_rest/services/JwtHandler.php';
-require_once '../auth_rest/services/AuthMiddleware.php';
+require_once '../auth_rest/Middlewares/JwtHandler.php';
+require_once '../auth_rest/Middlewares/AuthMiddleware.php';
 
 
 class UserController extends UserModel {

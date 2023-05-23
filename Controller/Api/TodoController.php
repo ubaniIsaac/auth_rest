@@ -1,7 +1,7 @@
 <?php
 
 require_once '../auth_rest/Models/TodoModel.php';
-require_once '../auth_rest/services/AuthMiddleware.php';
+require_once '../auth_rest/Middlewares/AuthMiddleware.php';
 
 class TodoController extends TodoModel {
 
